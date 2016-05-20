@@ -23,11 +23,11 @@ local windowsurface = sdl.getWindowSurface(window)
 
 
 -- We allocate two 1KB buffers to use with the runner
-local b1,b2,b3 = void(1024),void(1024),void(2400)
+local b1,b2,b3,b4 = void(1024),void(1024),void(2400),void(1024)
 
 -- Measurements by the runner all come in uint16s 
 -- so let's set the view access types accordingly
-b1.type,b2.type,b3.type="u16","u16","u16"
+b1.type,b2.type,b3.type,b4.type="u16","u16","u16","u16"
 
 -- We create a runner declaring the metrics we require
 -- in the exact order they will be placed in the buffers
@@ -79,35 +79,23 @@ while running do
 		-- we found on the first pass but this time we bound the scan area
 		-- using the coordinates we obtained from the full frame scanning  
 		-- This way we'll identify protrusions(hopefully limbs that extend) 
+	
+		rect.x,rect.y,rect.w,rect.h = x,y,X-x,Y-y
+		sdl.fillRect(windowsurface,rect,255)
+
+		local c4 = runner(b4,x,X,y,y+(Y-y)/5);
+		local x,y,X,Y,z,l = b4(i,6)
 		
-					rect.x,rect.y,rect.w,rect.h = x,y,X-x,Y-y
-					sdl.fillRect(windowsurface,rect,255)
-	end
-	
-	-- After tracking we'll threshold and overlay the raw depth as well
-	-- vision.raw() returns a pointer(lightuserdata) to the raw depth frame
-	-- the pointer changes every frame so we need to recast it after tapping
-	local dp = ffi.cast('uint16_t*',vision.raw())
-	
-	for i = 0,320*240-1 do
-		local v = dp[i]
-		if v < depth and v > 0 then
-			px[4*i+2] = 255-v*div
+		if c4 > 1 then
+		rect.x,rect.y,rect.w,rect.h = x,y,X-x,Y-y
+		sdl.fillRect(windowsurface,rect,100)
+
+		rect.x,rect.y,rect.w,rect.h = (x+X)/2-4,(y+Y)/2-4,8,8
+		sdl.fillRect(windowsurface,rect,255)
 		end
-		
+
 	end
 	
-	-- Let's also show the masks we collected on the top left corner
-	local dps = ffi.cast('uint16_t*',b3[0])
-	for i = 0,29 do
-		for j = 0,39 do
-			local v = dps[40*i+j]
-			if v < depth and v > 0 then
-				px[4*(320*i+j)+1] = 255-v*div
-			end
-		end
-	end
--- That's it, we're done with this frame. Let's show it
 	sdl.updateWindowSurface(window)
 	
 end
